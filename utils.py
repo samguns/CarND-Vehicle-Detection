@@ -2,7 +2,6 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 # Define a function to return some characteristics of the dataset
 def data_look(car_list, notcar_list):
     data_dict = {}
@@ -20,24 +19,18 @@ def data_look(car_list, notcar_list):
     return data_dict
 
 
-def visualize(img_list, img_labels, title, rows, cols=2, fig_size=(15, 15), show_ticks=True):
-    cmap = None
+def visualize(fig, rows, cols, imgs, titles):
+    for i, img in enumerate(imgs):
+        plt.subplot(rows, cols, i+1)
+        plt.title(i+1)
+        img_dims = len(img.shape)
+        if img_dims < 3:
+            plt.imshow(img, cmap='hot')
+            plt.title(titles[i])
+        else:
+            plt.imshow(img)
+            plt.title(titles[i])
 
-    fig, axes = plt.subplots(rows, cols, figsize=fig_size)
 
-    for i in range(0, rows):
-        for j in range(0, cols):
-            ax = axes[i, j] if rows > 1 else axes[j]
-            img_name = img_labels[i][j]
-            img = img_list[i][j]
-
-            if not show_ticks:
-                ax.axis("off")
-
-            ax.imshow(img, cmap=cmap)
-            ax.set_title(img_name)
-
-    fig.suptitle(title, fontsize=12, fontweight='bold', y=1)
-    fig.tight_layout()
     plt.show()
     return

@@ -7,10 +7,10 @@ __pycache__/
 .idea/
 # C extensions
 *.so
-.dataset/
-.examples/
-.test_images/
-.output_images/
+dataset/
+examples/
+test_images/
+output_images/
 # Distribution / packaging
 .Python
 build/
