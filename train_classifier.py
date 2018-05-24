@@ -1,10 +1,6 @@
 from random import shuffle
-
-import cv2
 import glob
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+import pickle
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
@@ -42,7 +38,7 @@ kitti_cars_images = glob.glob('dataset/vehicles/KITTI_extracted/*.png')
 for image in kitti_cars_images:
     cars.append(image)
 
-sample_size = 2500
+sample_size = 3000
 shuffle(cars)
 shuffle(notcars)
 cars = cars[0:sample_size]
@@ -111,3 +107,8 @@ t2 = time.time()
 print(round(t2 - t, 2), 'Seconds to train SVC...')
 # Check the score of the SVC
 print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+
+svm_model = {}
+svm_model["svc"] = svc
+svm_model["X_scaler"] = X_scaler
+pickle.dump(svm_model, open('svm_model.p', 'wb'))
