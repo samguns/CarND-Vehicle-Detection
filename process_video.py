@@ -1,5 +1,6 @@
 import pickle
-import glob
+from collections import OrderedDict
+from bisect import bisect_left, bisect_right
 import numpy as np
 from utils import *
 from vehicle import Vehicle
@@ -80,7 +81,7 @@ def find_cars(img, scale, ystart, ystop):
 
             test_decision = svc.decision_function(test_features)
 
-            if test_prediction == 1 and test_decision > 0.5:
+            if test_prediction == 1 and test_decision > 0.6:
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
@@ -91,20 +92,22 @@ def find_cars(img, scale, ystart, ystop):
 
 
 def process_image(img):
-    heat_map_scale_1 = find_cars(img, 1, 350, 500)
+    #heat_map_scale_1 = find_cars(img, 1, 350, 500)
+    heat_map_scale_1p5 = find_cars(img, 1.5, 300, 500)
     heat_map_scale_2 = find_cars(img, 2, 400, 650)
 
-    heat_map = np.asarray(heat_map_scale_1) + np.asarray(heat_map_scale_2)
-    heat = apply_threshold(heat_map, 3)
-    labels = label(heat)
+    heat_map = np.asarray(heat_map_scale_1p5) + np.asarray(heat_map_scale_2)
+    #heat = apply_threshold(heat_map, 1)
+    #heat = apply_threshold(heat_map_scale_2, 1)
+    labels = label(heat_map)
 
     draw_img = get_labeled_bboxes(np.copy(img), labels)
     return draw_img
 
-vehicles = {}
+
+vehicles = OrderedDict()
 def get_labeled_bboxes(img, labels):
     global vehicles
-    #print("Found " + str(labels[1]) + " potential cars")
     # Iterate through all detected cars
     for car_number in range(1, labels[1] + 1):
         # Find pixels with each car_number label value
@@ -112,36 +115,47 @@ def get_labeled_bboxes(img, labels):
         # Identify x and y values of those pixels
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
-        # Define a bounding box based on min/max x and y
-        #bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
         search_key = (np.min(nonzerox), np.min(nonzeroy))
 
         if len(vehicles) == 0:
             v = Vehicle()
-            v.update_detection(nonzerox, nonzeroy)
+            v.new_detection(nonzerox, nonzeroy)
             vehicles.update({search_key: v})
+            #print("new vehicle at", search_key)
         else:
             updated = False
-            for k in list(vehicles):
+            if search_key in vehicles:
+                vehicles[search_key].update_detection(nonzerox, nonzeroy)
+                #print("update vehicle at", search_key)
+                updated = True
+            else:
+                index = bisect_left(list(vehicles.keys()), search_key)
+                if 0 < index <= len(vehicles):
+                    index -= 1
+
+                k = list(vehicles.keys())[index]
+
                 x_diff = abs(search_key[0] - k[0])
                 y_diff = abs(search_key[1] - k[1])
-                if x_diff <= 10 and y_diff <= 10:
+                if x_diff <= 40 and y_diff <= 40:
+                    #print("update vehicle at", k, "with new key", search_key)
                     vehicles[k].update_detection(nonzerox, nonzeroy)
-                    vehicles[search_key] = vehicles.pop(k)
-                    updated = True
-                    break
 
-            if updated == False:
+                    if x_diff != 0 or y_diff != 0:
+                        vehicles[search_key] = vehicles.pop(k)
+                        vehicles = OrderedDict(sorted(vehicles.items()))
+                    updated = True
+
+            if updated is False:
                 v = Vehicle()
-                v.update_detection(nonzerox, nonzeroy)
+                v.new_detection(nonzerox, nonzeroy)
                 vehicles.update({search_key: v})
-        #print("car " + str(car_number) + " bbox " + str(bbox))
-        # Draw the box on the image
-        # cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+                vehicles = OrderedDict(sorted(vehicles.items()))
+                #print("add vehicle at", search_key)
 
     for _, vehicle in vehicles.items():
         ret, bbox = vehicle.get_bbox()
-        if ret == True:
+        if ret is True:
             cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
 
     # Return the image
@@ -149,7 +163,7 @@ def get_labeled_bboxes(img, labels):
 
 
 def process_video():
-    video_file = 'test_video.mp4'
+    video_file = 'project_video.mp4'
     track_output = 'track_' + video_file
     clip = VideoFileClip(video_file)
     track_clip = clip.fl_image(process_image)
