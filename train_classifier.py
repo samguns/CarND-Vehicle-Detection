@@ -38,11 +38,11 @@ kitti_cars_images = glob.glob('dataset/vehicles/KITTI_extracted/*.png')
 for image in kitti_cars_images:
     cars.append(image)
 
-sample_size = 8000
-shuffle(cars)
-shuffle(notcars)
-cars = cars[0:sample_size]
-notcars = notcars[0:sample_size]
+# sample_size = 8000
+# shuffle(cars)
+# shuffle(notcars)
+# cars = cars[0:sample_size]
+# notcars = notcars[0:sample_size]
 
 data_info = data_look(cars, notcars)
 

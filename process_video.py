@@ -82,7 +82,7 @@ def find_cars(img, scale, ystart, ystop):
 
             test_decision = svc.decision_function(test_features)
 
-            if test_prediction == 1 and test_decision > 0.5:
+            if test_prediction == 1 and test_decision > 0.6:
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
@@ -94,13 +94,20 @@ def find_cars(img, scale, ystart, ystop):
 
 scaled_regions = [(1.2, 380, 520), (2, 400, 660)]
 vehicles = OrderedDict()
+heat_stack = []
 def process_image(img):
+    global heat_stack
     heat_map = np.zeros_like(img[:, :, 0])
     for scaled_region in scaled_regions:
         found_heat_map = find_cars(img, scaled_region[0], scaled_region[1], scaled_region[2])
         heat_map += np.asarray(found_heat_map)
 
-    heat = apply_threshold(heat_map, 1)
+    heat_stack.append(heat_map)
+    if len(heat_stack) > 10:
+        heat_stack = heat_stack[-10:]
+
+    mean_heats = np.mean(heat_stack, axis=0).astype(int)
+    heat = apply_threshold(mean_heats, int(len(heat_stack) / 2))
     heat = np.clip(heat, 0, 255)
     labels = label(heat)
 
@@ -171,6 +178,7 @@ def get_labeled_bboxes(img, labels):
                 #print("add vehicle at", search_key)
                 #print(vehicles.keys())
 
+    #print()
     for _, vehicle in vehicles.items():
         ret, bbox = vehicle.get_bbox()
         if ret is True:
@@ -183,7 +191,7 @@ def get_labeled_bboxes(img, labels):
 def process_video():
     video_file = 'project_video.mp4'
     track_output = 'track_' + video_file
-    clip = VideoFileClip(video_file).subclip(8)
+    clip = VideoFileClip(video_file)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)
     return
