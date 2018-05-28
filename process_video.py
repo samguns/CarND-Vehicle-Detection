@@ -1,11 +1,11 @@
 import pickle
-from collections import OrderedDict
-from bisect import bisect_left, bisect_right
 import numpy as np
 from utils import *
-from vehicle import Vehicle
 from scipy.ndimage.measurements import label
 from moviepy.editor import VideoFileClip
+from collections import OrderedDict
+from bisect import bisect_left
+from vehicle import Vehicle
 
 
 svm_model = pickle.load(open("svm_model.p", "rb"))
@@ -13,16 +13,17 @@ svc = svm_model["svc"]
 X_scaler = svm_model["X_scaler"]
 
 
-color_space = 'YCrCb'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 8  # HOG orientations
-pix_per_cell = 8  # HOG pixels per cell
-cell_per_block = 2  # HOG cells per block
-hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
-spatial_size = (32, 32)  # Spatial binning dimensions
-hist_bins = 32  # Number of histogram bins
-spatial_feat = True  # Spatial features on or off
-hist_feat = True  # Histogram features on or off
-hog_feat = True  # HOG features on or off
+color_space = hog_params["color_space"]
+conv_color = hog_params["conv_color"]
+orient = hog_params["orient"]
+pix_per_cell = hog_params["pix_per_cell"]
+cell_per_block = hog_params["cell_per_block"]
+hog_channel = hog_params["hog_channel"]
+spatial_size = hog_params["spatial_size"]
+hist_bins = hog_params["hist_bins"]
+spatial_feat = hog_params["spatial_feat"]
+hist_feat = hog_params["hist_feat"]
+hog_feat = hog_params["hog_feat"]
 
 
 def find_cars(img, scale, ystart, ystop):
@@ -30,7 +31,7 @@ def find_cars(img, scale, ystart, ystop):
     img = img.astype(np.float32) / 255
 
     img_tosearch = img[ystart:ystop, :, :]
-    ctrans_tosearch = convert_color(img_tosearch)
+    ctrans_tosearch = convert_color(img_tosearch, conv_color)
     if scale != 1:
         imshape = ctrans_tosearch.shape
         ctrans_tosearch = cv2.resize(ctrans_tosearch, (np.int(imshape[1 ] /scale), (np.int(imshape[0 ] /scale))))
@@ -81,7 +82,7 @@ def find_cars(img, scale, ystart, ystop):
 
             test_decision = svc.decision_function(test_features)
 
-            if test_prediction == 1 and test_decision > 0.6:
+            if test_prediction == 1 and test_decision > 0.5:
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
@@ -91,21 +92,23 @@ def find_cars(img, scale, ystart, ystop):
     return heatmap
 
 
+scaled_regions = [(1.2, 380, 520), (2, 400, 660)]
+vehicles = OrderedDict()
 def process_image(img):
-    #heat_map_scale_1 = find_cars(img, 1, 350, 500)
-    heat_map_scale_1p5 = find_cars(img, 1.5, 300, 500)
-    heat_map_scale_2 = find_cars(img, 2, 400, 650)
+    heat_map = np.zeros_like(img[:, :, 0])
+    for scaled_region in scaled_regions:
+        found_heat_map = find_cars(img, scaled_region[0], scaled_region[1], scaled_region[2])
+        heat_map += np.asarray(found_heat_map)
 
-    heat_map = np.asarray(heat_map_scale_1p5) + np.asarray(heat_map_scale_2)
-    #heat = apply_threshold(heat_map, 1)
-    #heat = apply_threshold(heat_map_scale_2, 1)
-    labels = label(heat_map)
+    heat = apply_threshold(heat_map, 1)
+    heat = np.clip(heat, 0, 255)
+    labels = label(heat)
 
     draw_img = get_labeled_bboxes(np.copy(img), labels)
+    #draw_img = draw_labeled_bboxes(np.copy(img), labels)
     return draw_img
 
 
-vehicles = OrderedDict()
 def get_labeled_bboxes(img, labels):
     global vehicles
     # Iterate through all detected cars
@@ -130,20 +133,34 @@ def get_labeled_bboxes(img, labels):
                 updated = True
             else:
                 index = bisect_left(list(vehicles.keys()), search_key)
-                if 0 < index <= len(vehicles):
-                    index -= 1
+                k = []
+                if 0 < index < len(vehicles):
+                    k_1 = list(vehicles.keys())[index-1]
+                    k_2 = list(vehicles.keys())[index]
+                    diff_1 = list(abs(np.asarray(k_1) - np.asarray(search_key)))
+                    diff_2 = list(abs(np.asarray(k_2) - np.asarray(search_key)))
+                    if diff_1 < diff_2:
+                        k = k_1
+                    else:
+                        k = k_2
+                elif index == len(vehicles):
+                    k = list(vehicles.keys())[index-1]
+                else:
+                    k = list(vehicles.keys())[0]
 
-                k = list(vehicles.keys())[index]
+                #k = list(vehicles.keys())[index]
+                #print("closest key", k, "search key", search_key)
 
                 x_diff = abs(search_key[0] - k[0])
                 y_diff = abs(search_key[1] - k[1])
-                if x_diff <= 40 and y_diff <= 40:
+                if x_diff <= 70 and y_diff <= 70:
                     #print("update vehicle at", k, "with new key", search_key)
                     vehicles[k].update_detection(nonzerox, nonzeroy)
 
                     if x_diff != 0 or y_diff != 0:
                         vehicles[search_key] = vehicles.pop(k)
                         vehicles = OrderedDict(sorted(vehicles.items()))
+                        #print(vehicles.keys())
                     updated = True
 
             if updated is False:
@@ -152,6 +169,7 @@ def get_labeled_bboxes(img, labels):
                 vehicles.update({search_key: v})
                 vehicles = OrderedDict(sorted(vehicles.items()))
                 #print("add vehicle at", search_key)
+                #print(vehicles.keys())
 
     for _, vehicle in vehicles.items():
         ret, bbox = vehicle.get_bbox()
@@ -165,7 +183,7 @@ def get_labeled_bboxes(img, labels):
 def process_video():
     video_file = 'project_video.mp4'
     track_output = 'track_' + video_file
-    clip = VideoFileClip(video_file)
+    clip = VideoFileClip(video_file).subclip(20)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)
     return

@@ -275,7 +275,7 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     return imcopy
 
 
-def convert_color(img, conv='RGB2YCrCb'):
+def convert_color(img, conv=None):
     if conv == 'RGB2YCrCb':
         return cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
 
@@ -284,6 +284,17 @@ def convert_color(img, conv='RGB2YCrCb'):
 
     if conv == 'RGB2LUV':
         return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+
+    if conv == 'RGB2YUV':
+        return cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+
+    if conv == 'RGB2HSV':
+        return cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+    if conv == 'RGB2HLS':
+        return cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+
+    return img
 
 
 def apply_threshold(heatmap, threshold):
@@ -307,3 +318,17 @@ def draw_labeled_bboxes(img, labels):
         cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
     # Return the image
     return img
+
+
+hog_params = {}
+hog_params["color_space"] = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+hog_params["conv_color"] = 'RGB2YCrCb'
+hog_params["orient"] = 9  # HOG orientations
+hog_params["pix_per_cell"] = 8  # HOG pixels per cell
+hog_params["cell_per_block"] = 2  # HOG cells per block
+hog_params["hog_channel"] = "ALL"  # Can be 0, 1, 2, or "ALL"
+hog_params["spatial_size"] = (32, 32)  # Spatial binning dimensions
+hog_params["hist_bins"] = 32  # Number of histogram bins
+hog_params["spatial_feat"] = True  # Spatial features on or off
+hog_params["hist_feat"] = True  # Histogram features on or off
+hog_params["hog_feat"] = True  # HOG features on or off

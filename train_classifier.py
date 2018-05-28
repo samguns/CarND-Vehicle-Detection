@@ -38,7 +38,7 @@ kitti_cars_images = glob.glob('dataset/vehicles/KITTI_extracted/*.png')
 for image in kitti_cars_images:
     cars.append(image)
 
-sample_size = 3000
+sample_size = 8000
 shuffle(cars)
 shuffle(notcars)
 cars = cars[0:sample_size]
@@ -53,16 +53,16 @@ print('of size: ', data_info["image_shape"], ' and data type:',
       data_info["data_type"])
 
 
-color_space = 'YCrCb'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 8  # HOG orientations
-pix_per_cell = 8  # HOG pixels per cell
-cell_per_block = 2  # HOG cells per block
-hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
-spatial_size = (32, 32)  # Spatial binning dimensions
-hist_bins = 32  # Number of histogram bins
-spatial_feat = True  # Spatial features on or off
-hist_feat = True  # Histogram features on or off
-hog_feat = True  # HOG features on or off
+color_space = hog_params["color_space"]
+orient = hog_params["orient"]
+pix_per_cell = hog_params["pix_per_cell"]
+cell_per_block = hog_params["cell_per_block"]
+hog_channel = hog_params["hog_channel"]
+spatial_size = hog_params["spatial_size"]
+hist_bins = hog_params["hist_bins"]
+spatial_feat = hog_params["spatial_feat"]
+hist_feat = hog_params["hist_feat"]
+hog_feat = hog_params["hog_feat"]
 
 car_features = extract_features(cars, color_space=color_space,
                                 spatial_size=spatial_size, hist_bins=hist_bins,
@@ -94,7 +94,7 @@ X_scaler = StandardScaler().fit(X_train)
 X_train = X_scaler.transform(X_train)
 X_test = X_scaler.transform(X_test)
 
-print('Using:', orient, 'orientations', pix_per_cell,
+print('Color space', color_space, 'Using:', orient, 'orientations', pix_per_cell,
       'pixels per cell and', cell_per_block, 'cells per block')
 print('Feature vector length:', len(X_train[0]))
 

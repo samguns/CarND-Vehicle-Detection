@@ -11,6 +11,8 @@ dataset/
 examples/
 test_images/
 output_images/
+test_video_images/
+track_*
 # Distribution / packaging
 .Python
 build/
