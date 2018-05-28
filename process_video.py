@@ -183,7 +183,7 @@ def get_labeled_bboxes(img, labels):
 def process_video():
     video_file = 'project_video.mp4'
     track_output = 'track_' + video_file
-    clip = VideoFileClip(video_file).subclip(20)
+    clip = VideoFileClip(video_file).subclip(8)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)
     return

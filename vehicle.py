@@ -39,7 +39,7 @@ class Vehicle:
         y_1 = np.min(self.ypixels)
         x_2 = np.max(self.xpixels)
         y_2 = np.max(self.ypixels)
-        if (x_2 - x_1 >= 40) and (y_2 - y_1 >= 40):
+        if (x_2 - x_1 >= 50) and (y_2 - y_1 >= 50):
             self.recent_xfitted.append(x_1)
             self.recent_yfitted.append(y_1)
             self.recent_wfitted.append(x_2)
@@ -54,12 +54,12 @@ class Vehicle:
         if self.detected == False:
             self.n_nondetections += 1
 
-        if self.n_nondetections >= 8:
+        if self.n_nondetections >= 5:
             self.n_detections = 0
-            self.recent_xfitted = []
-            self.recent_yfitted = []
-            self.recent_wfitted = []
-            self.recent_hfitted = []
+            # self.recent_xfitted = []
+            # self.recent_yfitted = []
+            # self.recent_wfitted = []
+            # self.recent_hfitted = []
 
         self.detected = False
 
