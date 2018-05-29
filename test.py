@@ -53,6 +53,7 @@ def find_cars(img, scale, ystart, ystop):
     hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
 
+    bboxes = []
     for xb in range(nxsteps):
         for yb in range(nysteps):
             ypos = yb * cells_per_step
@@ -88,34 +89,39 @@ def find_cars(img, scale, ystart, ystop):
                 win_draw = np.int(window * scale)
 
                 heatmap[ytop_draw +ystart:ytop_draw +win_draw +ystart, xbox_left:xbox_left +win_draw] += 1
+                #bboxes.append(((xbox_left, ytop_draw + ystart), (xbox_left + win_draw, ytop_draw + win_draw + ystart)))
 
     return heatmap
 
 
-scaled_regions = [(1.2, 380, 520), (2, 400, 660)]
+scaled_regions = [(1.2, 380, 520), (1.5, 400, 600), (2, 400, 660)]
 vehicles = OrderedDict()
 heat_stack = []
+frames = 0
 def process_image(img):
     global heat_stack
+    global frames
+    print("frame", frames)
     heat_map = np.zeros_like(img[:, :, 0])
     for scaled_region in scaled_regions:
         found_heat_map = find_cars(img, scaled_region[0], scaled_region[1], scaled_region[2])
-        heat_map += np.asarray(found_heat_map)
+        thresholded_heat = apply_threshold(found_heat_map, 3)
+        heat_map += np.asarray(thresholded_heat)
 
-    #heat_map = apply_threshold(heat_map, 3)
+    mpimg.imsave("frames/heat"+str(frames)+".jpg", heat_map)
+
     heat_stack.append(heat_map)
-    if len(heat_stack) > 10:
-        heat_stack = heat_stack[-10:]
+    heat_stack = heat_stack[-10:]
 
     mean_heats = np.mean(heat_stack, axis=0).astype(int)
-    mean_heats = apply_threshold(mean_heats, 2)
+    mean_heats = apply_threshold(mean_heats, 1)
+    mpimg.imsave("frames/mean_heat" + str(frames) + ".jpg", mean_heats)
     heat = np.clip(mean_heats, 0, 255)
     labels = label(heat)
+    frames += 1
 
     draw_img = get_labeled_bboxes(np.copy(img), labels)
-    labels_img = draw_labeled_bboxes(np.copy(img), labels)
-    result = cv2.addWeighted(draw_img, 1, labels_img, 0.3, 0)
-    return result
+    return draw_img
 
 
 def get_labeled_bboxes(img, labels):
@@ -133,12 +139,10 @@ def get_labeled_bboxes(img, labels):
             v = Vehicle()
             v.new_detection(nonzerox, nonzeroy)
             vehicles.update({search_key: v})
-            #print("new vehicle at", search_key)
         else:
             updated = False
             if search_key in vehicles:
                 vehicles[search_key].update_detection(nonzerox, nonzeroy)
-                print("update vehicle at", search_key)
                 updated = True
             else:
                 index = bisect_left(list(vehicles.keys()), search_key)
@@ -157,19 +161,14 @@ def get_labeled_bboxes(img, labels):
                 else:
                     k = list(vehicles.keys())[0]
 
-                #k = list(vehicles.keys())[index]
-                print("closest key", k, "search key", search_key)
-
                 x_diff = abs(search_key[0] - k[0])
                 y_diff = abs(search_key[1] - k[1])
                 if x_diff <= 70 and y_diff <= 70:
-                    print("update vehicle at", k, "with new key", search_key)
                     vehicles[k].update_detection(nonzerox, nonzeroy)
 
                     if x_diff != 0 or y_diff != 0:
                         vehicles[search_key] = vehicles.pop(k)
                         vehicles = OrderedDict(sorted(vehicles.items()))
-                        #print(vehicles.keys())
                     updated = True
 
             if updated is False:
@@ -177,10 +176,7 @@ def get_labeled_bboxes(img, labels):
                 v.new_detection(nonzerox, nonzeroy)
                 vehicles.update({search_key: v})
                 vehicles = OrderedDict(sorted(vehicles.items()))
-                print("add vehicle at", search_key)
-                #print(vehicles.keys())
 
-    #print()
     for _, vehicle in vehicles.items():
         ret, bbox = vehicle.get_bbox()
         if ret is True:
@@ -191,8 +187,8 @@ def get_labeled_bboxes(img, labels):
 
 
 def process_video():
-    video_file = 'project_video.mp4'
-    track_output = 'track_' + video_file
+    video_file = 'test_video.mp4'
+    track_output = 'tracking_' + video_file
     clip = VideoFileClip(video_file)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)

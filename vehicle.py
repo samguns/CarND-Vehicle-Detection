@@ -44,6 +44,11 @@ class Vehicle:
         self.recent_wfitted.append(w)
         self.recent_hfitted.append(h)
 
+        self.recent_xfitted = self.recent_xfitted[-20:]
+        self.recent_yfitted = self.recent_yfitted[-20:]
+        self.recent_wfitted = self.recent_wfitted[-20:]
+        self.recent_hfitted = self.recent_hfitted[-20:]
+
         self.n_detections += 1
         self.detected = True
         return
@@ -51,30 +56,25 @@ class Vehicle:
 
     def get_bbox(self):
         if self.detected == False:
+            print("Non-Detect", self.n_nondetections, self.recent_xfitted, self.recent_yfitted)
             self.n_nondetections += 1
 
-        if self.n_nondetections >= 2:
+        if self.n_nondetections >= 16:
             self.n_detections = 0
+            self.n_nondetections = 0
+            print("Remove", self.recent_xfitted, self.recent_yfitted)
             self.recent_xfitted = []
             self.recent_yfitted = []
             self.recent_wfitted = []
             self.recent_hfitted = []
 
 
-        if self.detected:# and self.n_detections > 3:
-            self.bestx = np.min(self.xpixels)
-            self.besty = np.min(self.ypixels)
-            self.bestw = np.max(self.xpixels)
-            self.besth = np.max(self.ypixels)
-
-            # self.bestx = np.mean(self.recent_xfitted, axis=0).astype(int)
-            # self.besty = np.mean(self.recent_yfitted, axis=0).astype(int)
-            # self.bestw = np.mean(self.recent_wfitted, axis=0).astype(int)
-            # self.besth = np.mean(self.recent_hfitted, axis=0).astype(int)
-            # self.bestx = int(sum(self.recent_xfitted[-5:]) / 5)
-            # self.besty = int(sum(self.recent_yfitted[-5:]) / 5)
-            # self.bestw = int(sum(self.recent_wfitted[-5:]) / 5)
-            # self.besth = int(sum(self.recent_hfitted[-5:]) / 5)
+        if self.n_detections != 0:# and self.n_detections > 2:
+            self.bestx = np.mean(self.recent_xfitted, axis=0).astype(int)
+            self.besty = np.mean(self.recent_yfitted, axis=0).astype(int)
+            self.bestw = np.mean(self.recent_wfitted, axis=0).astype(int)
+            self.besth = np.mean(self.recent_hfitted, axis=0).astype(int)
+            print("deteced", self.n_detections, len(self.recent_xfitted), self.recent_xfitted, "selft.bestx/y", self.bestx, self.besty)
             bbox = ((self.bestx, self.besty), (self.bestw, self.besth))
 
             self.detected = False
