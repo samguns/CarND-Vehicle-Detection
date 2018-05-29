@@ -41,8 +41,15 @@ class Vehicle:
         h = np.max(self.ypixels)
         self.recent_xfitted.append(x)
         self.recent_yfitted.append(y)
-        self.recent_wfitted.append(w)
-        self.recent_hfitted.append(h)
+        if (w - x) < 40:
+            self.recent_wfitted.append(x+40)
+        else:
+            self.recent_wfitted.append(w)
+
+        if (h - y) < 40:
+            self.recent_hfitted.append(y+40)
+        else:
+            self.recent_hfitted.append(h)
 
         self.recent_xfitted = self.recent_xfitted[-20:]
         self.recent_yfitted = self.recent_yfitted[-20:]
@@ -50,12 +57,13 @@ class Vehicle:
         self.recent_hfitted = self.recent_hfitted[-20:]
 
         self.n_detections += 1
+        self.n_nondetections = 0
         self.detected = True
         return
 
 
     def get_bbox(self):
-        if self.detected == False:
+        if not self.detected:
             print("Non-Detect", self.n_nondetections, self.recent_xfitted, self.recent_yfitted)
             self.n_nondetections += 1
 

@@ -12,7 +12,10 @@ examples/
 test_images/
 output_images/
 test_video_images/
+*.jpg
+*.png
 *.mp4
+*.txt
 # Distribution / packaging
 .Python
 build/
