@@ -118,9 +118,10 @@ def process_image(img):
     mpimg.imsave("frames/mean_heat" + str(frames) + ".jpg", mean_heats)
     heat = np.clip(mean_heats, 0, 255)
     labels = label(heat)
-    frames += 1
 
     draw_img = get_labeled_bboxes(np.copy(img), labels)
+    mpimg.imsave("frames/" + str(frames) + ".jpg", draw_img)
+    frames += 1
     return draw_img
 
 
@@ -139,10 +140,12 @@ def get_labeled_bboxes(img, labels):
             v = Vehicle()
             v.new_detection(nonzerox, nonzeroy)
             vehicles.update({search_key: v})
+            print("new vehicle at", search_key)
         else:
             updated = False
             if search_key in vehicles:
                 vehicles[search_key].update_detection(nonzerox, nonzeroy)
+                print("update vehicle at", search_key)
                 updated = True
             else:
                 index = bisect_left(list(vehicles.keys()), search_key)
@@ -161,14 +164,19 @@ def get_labeled_bboxes(img, labels):
                 else:
                     k = list(vehicles.keys())[0]
 
+                #k = list(vehicles.keys())[index]
+                print("closest key", k, "search key", search_key)
+
                 x_diff = abs(search_key[0] - k[0])
                 y_diff = abs(search_key[1] - k[1])
-                if x_diff <= 70 and y_diff <= 70:
+                if x_diff <= 100 and y_diff <= 100:
+                    print("update vehicle at", k, "with new key", search_key)
                     vehicles[k].update_detection(nonzerox, nonzeroy)
 
                     if x_diff != 0 or y_diff != 0:
                         vehicles[search_key] = vehicles.pop(k)
                         vehicles = OrderedDict(sorted(vehicles.items()))
+                        #print(vehicles.keys())
                     updated = True
 
             if updated is False:
@@ -176,10 +184,14 @@ def get_labeled_bboxes(img, labels):
                 v.new_detection(nonzerox, nonzeroy)
                 vehicles.update({search_key: v})
                 vehicles = OrderedDict(sorted(vehicles.items()))
+                print("add vehicle at", search_key)
+                #print(vehicles.keys())
 
-    for _, vehicle in vehicles.items():
+    for ind, vehicle in vehicles.items():
         ret, bbox = vehicle.get_bbox()
+        print("check", ind, "got", str(ret))
         if ret is True:
+            print("ind", ind, "bbox", bbox)
             cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
 
     # Return the image
@@ -187,9 +199,9 @@ def get_labeled_bboxes(img, labels):
 
 
 def process_video():
-    video_file = 'test_video.mp4'
+    video_file = 'project_video.mp4'
     track_output = 'tracking_' + video_file
-    clip = VideoFileClip(video_file)
+    clip = VideoFileClip(video_file).subclip(20)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)
     return

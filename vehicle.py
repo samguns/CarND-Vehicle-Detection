@@ -51,10 +51,10 @@ class Vehicle:
         else:
             self.recent_hfitted.append(h)
 
-        self.recent_xfitted = self.recent_xfitted[-20:]
-        self.recent_yfitted = self.recent_yfitted[-20:]
-        self.recent_wfitted = self.recent_wfitted[-20:]
-        self.recent_hfitted = self.recent_hfitted[-20:]
+        self.recent_xfitted = self.recent_xfitted[-10:]
+        self.recent_yfitted = self.recent_yfitted[-10:]
+        self.recent_wfitted = self.recent_wfitted[-10:]
+        self.recent_hfitted = self.recent_hfitted[-10:]
 
         self.n_detections += 1
         self.n_nondetections = 0
@@ -67,7 +67,7 @@ class Vehicle:
             print("Non-Detect", self.n_nondetections, self.recent_xfitted, self.recent_yfitted)
             self.n_nondetections += 1
 
-        if self.n_nondetections >= 16:
+        if self.n_nondetections >= 10:
             self.n_detections = 0
             self.n_nondetections = 0
             print("Remove", self.recent_xfitted, self.recent_yfitted)
