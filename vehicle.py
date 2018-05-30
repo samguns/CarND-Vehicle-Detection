@@ -25,19 +25,19 @@ class Vehicle:
         self.recent_lty_fitted.append(left_top_y)
 
         width = right_bottom_x - left_top_x
-        if width < 40:
+        if width < 80:
             self.recent_rbx_fitted.append(left_top_x+40)
         else:
             self.recent_rbx_fitted.append(right_bottom_x)
 
         height = right_bottom_y - left_top_y
-        if height < 40:
+        if height < 80:
             self.recent_rby_fitted.append(left_top_y+40)
         else:
             self.recent_rby_fitted.append(right_bottom_y)
 
         self.recent_ltx_fitted = self.recent_ltx_fitted[-10:]
-        self.recent_lty_yfitted = self.recent_lty_fitted[-10:]
+        self.recent_lty_fitted = self.recent_lty_fitted[-10:]
         self.recent_rbx_fitted = self.recent_rbx_fitted[-10:]
         self.recent_rby_fitted = self.recent_rby_fitted[-10:]
 
