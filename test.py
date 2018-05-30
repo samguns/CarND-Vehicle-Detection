@@ -3,8 +3,6 @@ import numpy as np
 from utils import *
 from scipy.ndimage.measurements import label
 from moviepy.editor import VideoFileClip
-from collections import OrderedDict
-from bisect import bisect_left
 from vehicle import Vehicle
 
 
@@ -95,7 +93,7 @@ def find_cars(img, scale, ystart, ystop):
 
 
 scaled_regions = [(1.2, 380, 520), (1.5, 400, 600), (2, 400, 660)]
-vehicles = OrderedDict()
+vehicles = []
 heat_stack = []
 frames = 0
 def process_image(img):
@@ -128,80 +126,53 @@ def process_image(img):
 def get_labeled_bboxes(img, labels):
     global vehicles
     # Iterate through all detected cars
-    for car_number in range(1, labels[1] + 1):
+    for car_number in range(1, max((labels[1] + 1), len(vehicles))):
         # Find pixels with each car_number label value
         nonzero = (labels[0] == car_number).nonzero()
         # Identify x and y values of those pixels
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
+        if len(nonzerox) == 0:
+            continue
+
         search_key = (np.min(nonzerox), np.min(nonzeroy))
 
-        if len(vehicles) == 0:
-            v = Vehicle()
-            v.new_detection(nonzerox, nonzeroy)
-            vehicles.update({search_key: v})
-            print("new vehicle at", search_key)
-        else:
-            updated = False
-            if search_key in vehicles:
-                vehicles[search_key].update_detection(nonzerox, nonzeroy)
-                print("update vehicle at", search_key)
-                updated = True
-            else:
-                index = bisect_left(list(vehicles.keys()), search_key)
-                k = []
-                if 0 < index < len(vehicles):
-                    k_1 = list(vehicles.keys())[index-1]
-                    k_2 = list(vehicles.keys())[index]
-                    diff_1 = list(abs(np.asarray(k_1) - np.asarray(search_key)))
-                    diff_2 = list(abs(np.asarray(k_2) - np.asarray(search_key)))
-                    if diff_1 < diff_2:
-                        k = k_1
-                    else:
-                        k = k_2
-                elif index == len(vehicles):
-                    k = list(vehicles.keys())[index-1]
-                else:
-                    k = list(vehicles.keys())[0]
+        w = np.max(nonzerox) - np.min(nonzerox)
+        h = np.max(nonzeroy) - np.min(nonzeroy)
 
-                #k = list(vehicles.keys())[index]
-                print("closest key", k, "search key", search_key)
-
-                x_diff = abs(search_key[0] - k[0])
-                y_diff = abs(search_key[1] - k[1])
-                if x_diff <= 100 and y_diff <= 100:
-                    print("update vehicle at", k, "with new key", search_key)
-                    vehicles[k].update_detection(nonzerox, nonzeroy)
-
-                    if x_diff != 0 or y_diff != 0:
-                        vehicles[search_key] = vehicles.pop(k)
-                        vehicles = OrderedDict(sorted(vehicles.items()))
-                        #print(vehicles.keys())
-                    updated = True
-
-            if updated is False:
+        if car_number > len(vehicles):
+            if w > 40 and h > 40:
                 v = Vehicle()
-                v.new_detection(nonzerox, nonzeroy)
-                vehicles.update({search_key: v})
-                vehicles = OrderedDict(sorted(vehicles.items()))
-                print("add vehicle at", search_key)
-                #print(vehicles.keys())
+                v.update_detection(nonzerox, nonzeroy)
+                vehicles.append(v)
+                print("new vehicle at", search_key)
 
-    for ind, vehicle in vehicles.items():
-        ret, bbox = vehicle.get_bbox()
-        print("check", ind, "got", str(ret))
+        else:
+            vehicles[car_number-1].update_detection(nonzerox, nonzeroy)
+            print("update vehicle at", search_key)
+
+    obselete_vehicles = []
+    for i in range(len(vehicles)):
+        ret, bbox = vehicles[i].get_bbox()
+        print("Check", i, "got", ret)
         if ret is True:
-            print("ind", ind, "bbox", bbox)
+            print("car", i, "bbox", bbox)
             cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+        else:
+            obselete_vehicles.append(i)
+
+    # Remove non-detected vehicles
+    for remove_ind in obselete_vehicles:
+        del vehicles[remove_ind]
 
     # Return the image
     return img
 
 
 def process_video():
-    video_file = 'project_video.mp4'
+    video_file = 'test_video.mp4'
     track_output = 'tracking_' + video_file
-    clip = VideoFileClip(video_file).subclip(20)
+    clip = VideoFileClip(video_file)#.subclip(20)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)
     return
