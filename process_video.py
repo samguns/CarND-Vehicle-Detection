@@ -101,7 +101,6 @@ def process_image(img):
         thresholded_heat = apply_threshold(found_heat_map, 3)
         heat_map += np.asarray(thresholded_heat)
 
-    #heat_map = apply_threshold(heat_map, 3)
     heat_stack.append(heat_map)
     heat_stack = heat_stack[-10:]
 
