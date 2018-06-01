@@ -12,7 +12,7 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 [image1]: ./output_images/car_not_car.png
 [image2]: ./output_images/hog_spacial_features.png
-[image3]: ./examples/sliding_windows.jpg
+[image3]: ./output_images/scaled_sliding_window_search.png
 [image4]: ./examples/sliding_window.jpg
 [image5]: ./examples/bboxes_and_heat.png
 [image6]: ./examples/labels_map.png
@@ -39,7 +39,7 @@ Here is an example using the `YCrCb` color space and their respective `(32, 32)`
 
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-I tried various combinations of parameters and ended up with HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)` on all three channels of YCrCb.
+I tried various combinations of parameters and ended up with HOG parameters of `orientations=9`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)` on all three channels of YCrCb.
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
@@ -48,16 +48,14 @@ I trained a linear SVM using a combined HOG features described above, `(32, 32)`
 ### Sliding Window Search
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
+#### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
+I used a scale of 1.2 to search regions `(380, 520)` in Y axis, a scale of 1.5 to search `(400, 600)` and a 2.0 for `(400, 660)` in Y axis. I found the 1.2 and 1.5 scaled searching generally identified the car correctly, but the resulted bounding boxes were a bit small. So I tried some larger scaled searching. They not only returned a larger shape, but more false positives as well. Thus, I ended up using one 2.0 scaled searching. I wrapped up this scaled sliding window search in function `find_cars` through line 27 to line 90. The searching window size is 64 (8x8) at a step of 2 pixels, which has a 75% overlapping.
+
+After combining these three scaled searching, I got an acceptable results. Here are some example images:
 
 ![alt text][image3]
 
-#### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
-
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
-
-![alt text][image4]
 ---
 
 ### Video Implementation
