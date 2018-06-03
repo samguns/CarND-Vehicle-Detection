@@ -13,11 +13,8 @@ The goals / steps of this project are the following:
 [image1]: ./output_images/car_not_car.png
 [image2]: ./output_images/hog_spacial_features.png
 [image3]: ./output_images/scaled_sliding_window_search.png
-[image4]: ./examples/sliding_window.jpg
-[image5]: ./examples/bboxes_and_heat.png
-[image6]: ./examples/labels_map.png
-[image7]: ./examples/output_bboxes.png
-[video1]: ./project_video.mp4
+[image4]: ./output_images/bboxes_and_heat.png
+[video1]: ./traced_project_video.mp4
 
 
 ### Histogram of Oriented Gradients (HOG)
@@ -50,7 +47,7 @@ I trained a linear SVM using a combined HOG features described above, `(32, 32)`
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-I used a scale of 1.2 to search regions `(380, 520)` in Y axis, a scale of 1.5 to search `(400, 600)` and a 2.0 for `(400, 660)` in Y axis. I found the 1.2 and 1.5 scaled searching generally identified the car correctly, but the resulted bounding boxes were a bit small. So I tried some larger scaled searching. They not only returned a larger shape, but more false positives as well. Thus, I ended up using one 2.0 scaled searching. I wrapped up this scaled sliding window search in function `find_cars` through line 27 to line 90. The searching window size is 64 (8x8) at a step of 2 pixels, which has a 75% overlapping.
+I used a scale of 1.0 to search regions `(380, 520)` in Y axis, a scale of 1.5 to search `(400, 600)` and a 2.0 for `(400, 660)` in Y axis. I found the 1.2 and 1.5 scaled searching generally identified the car correctly, but the resulted bounding boxes were a bit small. So I tried some larger scaled searching. They not only returned a larger shape, but more false positives as well. Thus, I ended up using one 2.0 scaled searching. I wrapped up this scaled sliding window search in function `find_cars` through line 27 to line 90. The searching window size is 64 (8x8) at a step of 2 pixels, which has a 75% overlapping.
 
 After combining these three scaled searching, I got an acceptable results. Here are some example images:
 
@@ -66,19 +63,13 @@ Here's a [link to my video result](./project_video.mp4)
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
+I recorded the detected heatmap in each frame of the video. Then I accumulate current heatmap with previous 9 heats and take the mean value of the accumulated heatmap. I threshold the mean heatmap by 1 to eliminate all false positives. Because false positives appear intermittently and almost can't accumulate to 10 in a certain region. From the positive detections used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
 
 Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
 
-### Here are six frames and their corresponding heatmaps:
+### Here are 10 frames and their corresponding heatmaps:
 
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
+![alt text][image4]
 
 
 
@@ -88,4 +79,6 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+As the video shows, my detector losses target when the car is smaller (far away from the camera). Another problem is the detected bounding boxes are sometimes too thin-shaped, I have to supplement it with a manual correction to make the box reflecting a real shape. I think a more accurate model might help in improving these two problems. I'd like to try training the SVM model with more data. Another approach is to try some complex models such as AlexNet, ResNet, to replace this HOG+SVM implementation.
+
+Reflecting on this project, the processing speed is so slow, it made me frustrated every time when I tried my pipeline for the video. If I were to pursue this project further, I'd definitely try those state-of-art approaches such as YOLO, SSD.

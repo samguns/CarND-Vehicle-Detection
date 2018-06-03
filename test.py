@@ -92,7 +92,7 @@ def find_cars(img, scale, ystart, ystop):
     return heatmap
 
 
-scaled_regions = [(1.2, 380, 520), (1.5, 400, 600), (2, 400, 660)]
+scaled_regions = [(1.0, 380, 520), (1.5, 400, 600), (2, 400, 660)]
 vehicles = []
 heat_stack = []
 frames = 0
@@ -135,7 +135,7 @@ def get_labeled_bboxes(img, labels):
         if len(nonzerox) == 0:
             continue
 
-        search_key = (np.min(nonzerox), np.min(nonzeroy))
+        #search_key = (np.min(nonzerox), np.min(nonzeroy))
 
         w = np.max(nonzerox) - np.min(nonzerox)
         h = np.max(nonzeroy) - np.min(nonzeroy)
@@ -145,18 +145,17 @@ def get_labeled_bboxes(img, labels):
                 v = Vehicle()
                 v.update_detection(nonzerox, nonzeroy)
                 vehicles.append(v)
-                print("new vehicle at", search_key)
+                #print("new vehicle at", search_key)
 
         else:
             vehicles[car_number-1].update_detection(nonzerox, nonzeroy)
-            print("update vehicle at", search_key)
+            #print("update vehicle at", search_key)
 
     obselete_vehicles = []
     for i in range(len(vehicles)):
         ret, bbox = vehicles[i].get_bbox()
-        print("Check", i, "got", ret)
+        #print("Check", i, "got", ret)
         if ret is True:
-            print("car", i, "bbox", bbox)
             cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
         else:
             obselete_vehicles.append(i)
@@ -170,8 +169,8 @@ def get_labeled_bboxes(img, labels):
 
 
 def process_video():
-    video_file = 'test_video.mp4'
-    track_output = 'tracking_' + video_file
+    video_file = 'project_video.mp4'
+    track_output = 'debug_' + video_file
     clip = VideoFileClip(video_file)#.subclip(20)
     track_clip = clip.fl_image(process_image)
     track_clip.write_videofile(track_output, audio=False)#, verbose=True, progress_bar=False)
